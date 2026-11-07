@@ -55,6 +55,7 @@ var (
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(ColorSecondary).
 			Foreground(ColorText).
+			Width(92).
 			Padding(1, 2).
 			MarginBottom(1)
 
@@ -62,6 +63,7 @@ var (
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(ColorPrimary).
 				Foreground(ColorText).
+				Width(92).
 				Padding(1, 2).
 				MarginBottom(1)
 
@@ -69,6 +71,7 @@ var (
 				Border(lipgloss.DoubleBorder()).
 				BorderForeground(ColorMatrixGreen).
 				Foreground(ColorText).
+				Width(92).
 				Padding(1, 2).
 				MarginBottom(1)
 
@@ -76,21 +79,26 @@ var (
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(ColorSecondary).
 				Foreground(ColorText).
+				Width(92).
 				Padding(1, 2).
 				MarginBottom(1)
 
 	// Badges
 	BadgeChainStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ColorText).
-			Background(ColorSecondary).
+			Foreground(lipgloss.Color("#607D8B")).
 			Padding(0, 1)
 
 	BadgeSelectedChainStyle = lipgloss.NewStyle().
 				Bold(true).
-				Foreground(ColorText).
-				Background(ColorPrimary).
-				Padding(0, 1)
+				Foreground(lipgloss.Color("#000000")).
+				Background(ColorMatrixGreen).
+				Padding(0, 2)
+
+	InputBoxBorderStyle = lipgloss.NewStyle().
+				Border(lipgloss.NormalBorder()).
+				BorderForeground(ColorMatrixGreen).
+				Padding(0, 1).
+				Width(84)
 
 	BadgeExchangeHitStyle = lipgloss.NewStyle().
 				Bold(true).
@@ -123,33 +131,22 @@ var (
 			Foreground(ColorDanger)
 )
 
-// RenderBigBanner renders a large block-art "CRYPTO TRACKER" banner styled in
-// Red -> Purple -> Matrix Green.
+// RenderBigBanner renders a compact block-art "CRYPTO TRACKER" banner in solid crimson red,
+// sized to match the exact 94-column outer width of the UI panels below it.
 func RenderBigBanner() string {
 	lines := []string{
-		` ██████╗██████╗ ██╗   ██╗██████╗ ████████╗ ██████╗     ████████╗██████╗  █████╗  ██████╗██╗  ██╗███████╗██████╗ `,
-		`██╔════╝██╔══██╗╚██╗ ██╔╝██╔══██╗╚══██╔══╝██╔═══██╗    ╚══██╔══╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗`,
-		`██║     ██████╔╝ ╚████╔╝ ██████╔╝   ██║   ██║   ██║       ██║   ██████╔╝███████║██║     █████╔╝ █████╗  ██████╔╝`,
-		`██║     ██╔══██╗  ╚██╔╝  ██╔═══╝    ██║   ██║   ██║       ██║   ██╔══██╗██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗`,
-		`╚██████╗██║  ██║   ██║   ██║        ██║   ╚██████╔╝       ██║   ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║`,
-		` ╚═════╝╚═╝  ╚═╝   ╚═╝   ╚═╝        ╚═╝    ╚═════╝        ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝`,
+		`▄█████ █████▄ ██  ██ █████▄ ██████ ▄████▄     ██████ █████▄ ▄████▄ ▄█████ ██  ▄█ ██████ █████▄`,
+		`██     ██  ██  ████  ██  ██   ██   ██  ██       ██   ██  ██ ██  ██ ██     ██▄█▀  ██▄▄   ██  ██`,
+		`██     █████▀   ██   █████▀   ██   ██  ██       ██   █████▀ ██████ ██     ████▄  ██▀▀   █████▀`,
+		`▀█████ ██  ██   ██   ██       ██   ▀████▀       ██   ██  ██ ██  ██ ▀█████ ██  ██ ██████ ██  ██`,
 	}
 
 	redStyle := lipgloss.NewStyle().Bold(true).Foreground(ColorPrimary)
-	purpleStyle := lipgloss.NewStyle().Bold(true).Foreground(ColorSecondary)
-	matrixStyle := lipgloss.NewStyle().Bold(true).Foreground(ColorMatrixGreen)
 
 	var out strings.Builder
 	out.WriteString("\n")
-	for i, line := range lines {
-		switch {
-		case i < 2:
-			out.WriteString("  " + redStyle.Render(line) + "\n")
-		case i < 4:
-			out.WriteString("  " + purpleStyle.Render(line) + "\n")
-		default:
-			out.WriteString("  " + matrixStyle.Render(line) + "\n")
-		}
+	for _, line := range lines {
+		out.WriteString(redStyle.Render(line) + "\n")
 	}
 	return out.String()
 }

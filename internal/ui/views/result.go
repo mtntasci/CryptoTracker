@@ -42,7 +42,7 @@ func RenderResultView(p ResultViewProps) string {
 			))
 			hitBanner.WriteString(fmt.Sprintf("     %s : %s\n",
 				BoldWhiteStyle.Render("Wallet Category  "),
-				TextStyle.Render(fmt.Sprintf("%s (Confidence: %.0f%% | Source: %s)", attr.Category, attr.Confidence*100, attr.Source)),
+				TextStyle.Render(fmt.Sprintf("%s (%.0f%% | %s)", attr.Category, attr.Confidence*100, attr.Source)),
 			))
 			hitBanner.WriteString(fmt.Sprintf("     %s : %s\n",
 				BoldWhiteStyle.Render("Hot Wallet Addr  "),
@@ -82,9 +82,9 @@ func RenderResultView(p ResultViewProps) string {
 	summary.WriteString(SubHeaderStyle.Render("Trace Session Telemetry") + "\n\n")
 	summary.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Root Wallet         "), AddressStyle.Render(res.RootAddress)))
 	summary.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Chain & Architecture"), TextStyle.Render(fmt.Sprintf("%s (%s)  |  Elapsed Time: %s", meta.Name, meta.Architecture, duration))))
-	summary.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Traversal Stats     "), TextStyle.Render(fmt.Sprintf("Max Stage Reached: %d  |  Wallets Visited: %d  |  Transactions Analyzed: %d",
+	summary.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Traversal Stats     "), TextStyle.Render(fmt.Sprintf("Max Stage: %d  |  Wallets Visited: %d  |  Txs Analyzed: %d",
 		res.MaxDepthReached, res.TotalVisited, res.TotalTxAnalyzed))))
-	summary.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Heuristics Applied  "), TextStyle.Render(fmt.Sprintf("%d Valid Outbound Transfers  |  %d Filtered Outputs (Dust / Change / Self)",
+	summary.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Heuristics Applied  "), TextStyle.Render(fmt.Sprintf("%d Valid Outbound  |  %d Filtered (Dust / Change / Self)",
 		len(res.Steps), len(res.SkippedOutputs)))))
 
 	b.WriteString(PanelStyle.Render(summary.String()))

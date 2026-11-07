@@ -24,14 +24,13 @@ func RenderInputView(p InputViewProps) string {
 	b.WriteString(RenderBigBanner())
 	b.WriteString("\n")
 
-	// Chain selector bar
+	// Chain selector bar: Selected network has bright Matrix Green pill + arrows; unselected are dimmed without background
 	var chainTabs []string
 	for _, meta := range model.AllChains() {
-		label := fmt.Sprintf(" %s (%s) ", meta.Type, meta.Architecture)
 		if meta.Type == p.SelectedChain {
-			chainTabs = append(chainTabs, BadgeSelectedChainStyle.Render("●"+label))
+			chainTabs = append(chainTabs, BadgeSelectedChainStyle.Render(fmt.Sprintf("▶ %s (%s) ◀", meta.Type, meta.Architecture)))
 		} else {
-			chainTabs = append(chainTabs, BadgeChainStyle.Render("○"+label))
+			chainTabs = append(chainTabs, BadgeChainStyle.Render(fmt.Sprintf("%s (%s)", meta.Type, meta.Architecture)))
 		}
 	}
 
@@ -39,38 +38,38 @@ func RenderInputView(p InputViewProps) string {
 
 	var configLines strings.Builder
 	configLines.WriteString(SubHeaderStyle.Render("Engine Initialization & Active Parameters") + "\n\n")
-	configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Selected Network"), strings.Join(chainTabs, "  ")))
-	configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Chain Model     "), TextStyle.Render(fmt.Sprintf("%s (%s)", selectedMeta.Name, selectedMeta.Architecture))))
+	configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Selected Network"), strings.Join(chainTabs, "   ")))
+	configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Active Chain    "), AddressStyle.Render(fmt.Sprintf("✔ %s [%s Model]", selectedMeta.Name, selectedMeta.Architecture))))
 	configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("BFS Max Depth   "), TextStyle.Render(fmt.Sprintf("%d Stages (Max %d outbound branches/node)", p.Config.MaxDepth, p.Config.MaxBranches))))
 
 	switch p.SelectedChain {
 	case model.ChainBitcoin:
 		configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("UTXO Heuristics "), TextStyle.Render(fmt.Sprintf("Dust Filter (<= %d sats), Script-Type, Round-Amount & Optimal Change (UIH1)", p.Config.BTCDustThresholdSats))))
-		configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Keyless API     "), AddressStyle.Render(fmt.Sprintf("%s (Fallback: %s)", p.Config.MempoolBaseURL, p.Config.BlockstreamBaseURL))))
+		configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Keyless API     "), TextStyle.Render(fmt.Sprintf("%s (Fallback: %s)", p.Config.MempoolBaseURL, p.Config.BlockstreamBaseURL))))
 	case model.ChainEthereum:
 		configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Account Engine  "), TextStyle.Render("ERC-20 Smart Contract Transfer Event Log Monitor & Native ETH Sweep Detector")))
-		configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Keyless API     "), AddressStyle.Render(fmt.Sprintf("%s & Public JSON-RPC (%s)", p.Config.BlockscoutETHURL, p.Config.PublicETHRPCURL))))
+		configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Keyless API     "), TextStyle.Render(fmt.Sprintf("%s & Public JSON-RPC (%s)", p.Config.BlockscoutETHURL, p.Config.PublicETHRPCURL))))
 	case model.ChainTron:
 		configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Account Engine  "), TextStyle.Render("TRC-20 Smart Contract Transfer Event Log Monitor (USDT) & Native TRX")))
-		configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Keyless API     "), AddressStyle.Render(fmt.Sprintf("%s & %s", p.Config.TronGridBaseURL, p.Config.TronscanBaseURL))))
+		configLines.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Keyless API     "), TextStyle.Render(fmt.Sprintf("%s & %s", p.Config.TronGridBaseURL, p.Config.TronscanBaseURL))))
 	}
 
 	b.WriteString(PanelStyle.Render(configLines.String()))
 	b.WriteString("\n")
 
-	// Address Input Box
+	// Address Input Box with framed input field & blinking cursor
 	var inputBox strings.Builder
-	inputBox.WriteString(SubHeaderStyle.Render("Target Starting Wallet Address") + "\n")
-	inputBox.WriteString(TextStyle.Render("Paste a Bitcoin (1..., 3..., bc1...), Ethereum (0x...), or Tron (T...) address:") + "\n\n")
-	inputBox.WriteString("  " + p.TextInputView + "\n")
+	inputBox.WriteString(SubHeaderStyle.Render("Target Starting Wallet Address") + "  " + AddressStyle.Render("● [READY TO PASTE]") + "\n")
+	inputBox.WriteString(TextStyle.Render("Paste a Bitcoin (1..., 3..., bc1...), Ethereum (0x...), or Tron (T...) address below:") + "\n\n")
+	inputBox.WriteString(InputBoxBorderStyle.Render(p.TextInputView) + "\n")
 
 	if p.ErrorMessage != "" {
-		inputBox.WriteString("\n  " + ErrorStyle.Render("✖ "+p.ErrorMessage) + "\n")
+		inputBox.WriteString("\n" + ErrorStyle.Render("✖ "+p.ErrorMessage) + "\n")
 	}
 
 	b.WriteString(ActivePanelStyle.Render(inputBox.String()))
 	b.WriteString("\n")
-	b.WriteString(BoldWhiteStyle.Render("  [Tab] Switch Chain   [Enter] Start Live BFS Trace   [Ctrl+C / Esc] Quit"))
+	b.WriteString(BoldWhiteStyle.Render("  [Tab] Switch Network   [Cmd+V / Ctrl+V] Paste Address   [Enter] Start Trace   [Esc] Quit"))
 	b.WriteString("\n")
 
 	return b.String()

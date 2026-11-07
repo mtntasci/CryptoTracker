@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -64,13 +65,19 @@ type AppModel struct {
 // it immediately launches tracing on startup.
 func NewAppModel(cfg *config.Config, initialAddress string, initialChain model.ChainType) *AppModel {
 	ti := textinput.New()
-	ti.Placeholder = "e.g. bc1q..., 0x..., or T..."
-	ti.PromptStyle = views.SubHeaderStyle
+	ti.Prompt = "❯ "
+	ti.Placeholder = "Paste wallet address here (bc1q..., 0x..., or T...)"
+	ti.PromptStyle = lipgloss.NewStyle().Bold(true).Foreground(views.ColorMatrixGreen)
 	ti.TextStyle = views.BoldWhiteStyle
 	ti.PlaceholderStyle = views.MutedStyle
+	ti.Cursor.SetMode(cursor.CursorBlink)
+	ti.Cursor.Style = lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#000000")).
+		Background(views.ColorMatrixGreen)
 	ti.Focus()
 	ti.CharLimit = 100
-	ti.Width = 68
+	ti.Width = 76
 
 	sp := spinner.New()
 	sp.Spinner = spinner.MiniDot
@@ -104,7 +111,7 @@ func (m *AppModel) Init() tea.Cmd {
 		cmd := m.startTracingSession(strings.TrimSpace(m.textInput.Value()))
 		return tea.Batch(textinput.Blink, m.spinner.Tick, cmd)
 	}
-	return tea.Batch(textinput.Blink, m.spinner.Tick)
+	return tea.Batch(textinput.Blink, m.textInput.Cursor.BlinkCmd(), m.spinner.Tick)
 }
 
 func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -151,15 +158,6 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(m.spinner.Tick, cmd)
 			}
 
-			var tiCmd tea.Cmd
-			m.textInput, tiCmd = m.textInput.Update(msg)
-			// Auto-detect chain while typing
-			if detected, err := model.DetectChainFromAddress(m.textInput.Value()); err == nil {
-				m.selectedChain = detected
-				m.errorMsg = ""
-			}
-			return m, tiCmd
-
 		case StateResult:
 			switch msg.String() {
 			case "up", "k":
@@ -173,10 +171,10 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "n", "r":
 				m.state = StateInput
 				m.textInput.SetValue("")
-				m.textInput.Focus()
+				focusCmd := m.textInput.Focus()
 				m.finalResult = nil
 				m.scrollOffset = 0
-				return m, textinput.Blink
+				return m, tea.Batch(focusCmd, textinput.Blink)
 			}
 		}
 
@@ -225,6 +223,18 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		cmds = append(cmds, waitForNextTraceEvent(m.eventCh))
+	}
+
+	// Always forward messages (including cursor.BlinkMsg and key events) to textInput while in StateInput
+	if m.state == StateInput {
+		var tiCmd tea.Cmd
+		m.textInput, tiCmd = m.textInput.Update(msg)
+		cmds = append(cmds, tiCmd)
+
+		if detected, err := model.DetectChainFromAddress(m.textInput.Value()); err == nil {
+			m.selectedChain = detected
+			m.errorMsg = ""
+		}
 	}
 
 	return m, tea.Batch(cmds...)
@@ -331,4 +341,3 @@ func waitForNextTraceEvent(ch <-chan tracer.TraceEvent) tea.Cmd {
 		}
 	}
 }
-
