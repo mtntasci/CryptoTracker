@@ -1,0 +1,12 @@
+# Local cross-platform release downloads folder (keep locally, ignore in git)
+downloads/
+
+# Compiled binaries and installer packages
+cryptotracker
+crypto-tracker
+*.exe
+*.pkg
+
+# macOS system files
+.DS_Store
+
