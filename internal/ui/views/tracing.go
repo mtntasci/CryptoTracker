@@ -23,55 +23,62 @@ type TracingViewProps struct {
 	ExchangeHits   []model.TraceStep
 }
 
-// RenderTracingView renders the animated step-by-step hopping UI.
+// RenderTracingView renders the animated step-by-step stage traversal UI.
 func RenderTracingView(p TracingViewProps) string {
 	var b strings.Builder
 
-	meta := model.GetChainMetadata(p.Chain)
-
-	b.WriteString(HeaderStyle.Render(fmt.Sprintf(" CRYPTO-TRACKER // LIVE %s (%s) BFS TRACING ", meta.Type, meta.Architecture)))
-	b.WriteString("\n\n")
+	b.WriteString(RenderBigBanner())
+	b.WriteString("\n")
 
 	// 1. Live Status & Progress Indicator Panel
 	var statusPanel strings.Builder
-	depthBar := renderDepthProgressBar(p.CurrentDepth, p.MaxDepth)
-	statusPanel.WriteString(fmt.Sprintf("  %s %s\n\n", p.SpinnerView, SubHeaderStyle.Render(p.StatusMessage)))
-	statusPanel.WriteString(fmt.Sprintf("  Origin Address  : %s\n", AddressStyle.Render(p.RootAddress)))
-	statusPanel.WriteString(fmt.Sprintf("  Active Node     : %s\n", AddressStyle.Render(p.CurrentAddress)))
-	statusPanel.WriteString(fmt.Sprintf("  BFS Depth       : %s  (%d / %d Hops)\n", depthBar, p.CurrentDepth, p.MaxDepth))
-	statusPanel.WriteString(fmt.Sprintf("  Metrics         : %d Wallets Scanned  |  %d In Queue  |  %d Filtered (Dust/Change)  |  %d Exchange Hits",
-		p.VisitedCount, p.QueueSize, len(p.Skipped), len(p.ExchangeHits)))
+	depthBar := renderStageProgressBar(p.CurrentDepth, p.MaxDepth)
+	statusPanel.WriteString(fmt.Sprintf("  %s %s\n\n", p.SpinnerView, BoldWhiteStyle.Render(p.StatusMessage)))
+	statusPanel.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Origin Address "), AddressStyle.Render(p.RootAddress)))
+	statusPanel.WriteString(fmt.Sprintf("  %s : %s\n", BoldWhiteStyle.Render("Active Node    "), AddressStyle.Render(p.CurrentAddress)))
+	statusPanel.WriteString(fmt.Sprintf("  %s : %s  %s\n", BoldWhiteStyle.Render("BFS Stage      "), depthBar, BoldWhiteStyle.Render(fmt.Sprintf("(%d / %d Stages)", p.CurrentDepth, p.MaxDepth))))
+	statusPanel.WriteString(fmt.Sprintf("  %s : %s",
+		BoldWhiteStyle.Render("Metrics        "),
+		TextStyle.Render(fmt.Sprintf("%d Wallets Scanned  |  %d In Queue  |  %d Filtered (Dust/Change)  |  %d Exchange Hits",
+			p.VisitedCount, p.QueueSize, len(p.Skipped), len(p.ExchangeHits))),
+	))
 
 	b.WriteString(ActivePanelStyle.Render(statusPanel.String()))
 	b.WriteString("\n")
 
-	// 2. Step-by-Step Animated Hop Graph
+	// 2. Step-by-Step Animated Stage Graph
 	var hopPanel strings.Builder
-	hopPanel.WriteString(SubHeaderStyle.Render("Live Transaction Hop Graph (BFS Traversal)") + "\n\n")
+	hopPanel.WriteString(SubHeaderStyle.Render("Live Transaction Stage Graph (BFS Traversal)") + "\n\n")
 
 	if len(p.Steps) == 0 {
-		hopPanel.WriteString(MutedStyle.Render("  Scanning initial outbound transactions from starting wallet..."))
+		hopPanel.WriteString(TextStyle.Render("  Scanning initial outbound transactions from starting wallet..."))
 	} else {
 		startIdx := 0
 		if len(p.Steps) > 10 {
 			startIdx = len(p.Steps) - 10
-			hopPanel.WriteString(MutedStyle.Render(fmt.Sprintf("  ... (%d earlier hops omitted for view) ...\n", startIdx)))
+			hopPanel.WriteString(TextStyle.Render(fmt.Sprintf("  ... (%d earlier steps omitted for view) ...\n", startIdx)))
 		}
 		for _, step := range p.Steps[startIdx:] {
-			indent := strings.Repeat("  ", step.Depth-1)
-			hopTag := BadgeHopStyle.Render(fmt.Sprintf("[Hop %d]", step.Depth))
+			indentDepth := step.Depth - 1
+			if indentDepth < 0 {
+				indentDepth = 0
+			}
+			indent := strings.Repeat("  ", indentDepth)
+
+			stageStyle := StageBadgeStyle(step.Depth)
+			stageTag := stageStyle.Render(fmt.Sprintf("[Stage %d]", step.Depth))
 			fromStr := AddressStyle.Render(FormatShortAddr(step.FromAddress))
 			toStr := AddressStyle.Render(FormatShortAddr(step.ToAddress))
 			amtStr := AmountStyle.Render(fmt.Sprintf("%.4f %s", step.AmountFloat, step.AssetSymbol))
-			arrow := ArrowStyle.Render(fmt.Sprintf(" ──(%s)──▶ ", amtStr))
+			arrow := stageStyle.Render(" ──(") + amtStr + stageStyle.Render(")──▶ ")
 
 			destBadge := ""
 			if step.Attribution != nil && step.Attribution.IsTerminal {
 				destBadge = " " + BadgeExchangeHitStyle.Render(fmt.Sprintf("★ %s [%s]", step.Attribution.EntityName, step.Attribution.WalletLabel))
 			}
 
-			hopPanel.WriteString(fmt.Sprintf("  %s%s %s%s%s%s\n", indent, hopTag, fromStr, arrow, toStr, destBadge))
-			hopPanel.WriteString(fmt.Sprintf("  %s       %s\n", indent, MutedStyle.Render(fmt.Sprintf("└─ Tx: %s | %s", FormatShortAddr(step.TxID), step.HeuristicDetail))))
+			hopPanel.WriteString(fmt.Sprintf("  %s%s %s%s%s%s\n", indent, stageTag, fromStr, arrow, toStr, destBadge))
+			hopPanel.WriteString(fmt.Sprintf("  %s         %s\n", indent, TextStyle.Render(fmt.Sprintf("└─ Tx: %s | %s", FormatShortAddr(step.TxID), step.HeuristicDetail))))
 		}
 	}
 
@@ -86,13 +93,13 @@ func RenderTracingView(p TracingViewProps) string {
 			startSkip = len(p.Skipped) - 4
 		}
 		for _, sk := range p.Skipped[startSkip:] {
-			filterPanel.WriteString(fmt.Sprintf("  %s [Hop %d] %s (%.6f %s) — %s\n",
+			stageLabel := StageBadgeStyle(sk.Depth).Render(fmt.Sprintf("[Stage %d]", sk.Depth))
+			filterPanel.WriteString(fmt.Sprintf("  %s %s %s %s — %s\n",
 				BadgeSkippedStyle.Render("⊘ "+string(sk.Reason)),
-				sk.Depth,
+				stageLabel,
 				AddressStyle.Render(FormatShortAddr(sk.ToAddress)),
-				sk.AmountFloat,
-				sk.AssetSymbol,
-				MutedStyle.Render(sk.Detail),
+				BoldWhiteStyle.Render(fmt.Sprintf("(%.6f %s)", sk.AmountFloat, sk.AssetSymbol)),
+				TextStyle.Render(sk.Detail),
 			))
 		}
 		b.WriteString("\n")
@@ -100,24 +107,23 @@ func RenderTracingView(p TracingViewProps) string {
 	}
 
 	b.WriteString("\n")
-	b.WriteString(MutedStyle.Render("  [Ctrl+C / q] Cancel Trace & Exit"))
+	b.WriteString(BoldWhiteStyle.Render("  [Ctrl+C / q] Cancel Trace & Exit"))
 	b.WriteString("\n")
 
 	return b.String()
 }
 
-func renderDepthProgressBar(current, max int) string {
+func renderStageProgressBar(current, max int) string {
 	if max <= 0 {
 		max = 5
 	}
 	var segments []string
 	for i := 1; i <= max; i++ {
 		if i <= current {
-			segments = append(segments, BadgeSelectedChainStyle.Render(fmt.Sprintf("H%d", i)))
+			segments = append(segments, StagePillStyle(i).Render(fmt.Sprintf("Stage %d", i)))
 		} else {
-			segments = append(segments, MutedStyle.Render(fmt.Sprintf("[H%d]", i)))
+			segments = append(segments, TextStyle.Render(fmt.Sprintf("[Stage %d]", i)))
 		}
 	}
 	return strings.Join(segments, "━")
 }
-

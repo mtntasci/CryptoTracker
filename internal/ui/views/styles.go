@@ -2,24 +2,46 @@ package views
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/lipgloss"
 )
 
 var (
-	// Color Palette
-	ColorPrimary   = lipgloss.Color("#00E5FF") // Cyan
-	ColorSecondary = lipgloss.Color("#7C4DFF") // Deep Purple
-	ColorSuccess   = lipgloss.Color("#00E676") // Neon Green
-	ColorWarning   = lipgloss.Color("#FFB300") // Amber
-	ColorDanger    = lipgloss.Color("#FF5252") // Coral Red
-	ColorMuted     = lipgloss.Color("#78909C") // Blue Grey
-	ColorText      = lipgloss.Color("#ECEFF1") // Off-White
+	// Core Theme Palette: Red -> Purple -> Matrix Green, with Bright White text
+	ColorPrimary     = lipgloss.Color("#FF1744") // Primary: Vibrant Crimson Red
+	ColorSecondary   = lipgloss.Color("#AA00FF") // Secondary: Electric Purple
+	ColorMatrixGreen = lipgloss.Color("#00FF41") // Accent: Matrix Green
+	ColorSuccess     = lipgloss.Color("#00FF41") // Matrix Green
+	ColorWarning     = lipgloss.Color("#FFD600") // Bright Gold
+	ColorDanger      = lipgloss.Color("#FF1744") // Bright Red
+	ColorMuted       = lipgloss.Color("#B0BEC5") // Light Silver-Grey for secondary hints
+	ColorText        = lipgloss.Color("#FFFFFF") // Bright Pure White
+
+	// Distinct Color Palette for each Stage (starting with Red -> Purple -> Matrix Green)
+	StageColors = []lipgloss.Color{
+		lipgloss.Color("#FF1744"), // Stage 1: Crimson Red
+		lipgloss.Color("#AA00FF"), // Stage 2: Electric Purple
+		lipgloss.Color("#00FF41"), // Stage 3: Matrix Green
+		lipgloss.Color("#FF4081"), // Stage 4: Neon Magenta
+		lipgloss.Color("#00E5FF"), // Stage 5: Cyber Cyan
+		lipgloss.Color("#FFD600"), // Stage 6+: Cyber Gold
+		lipgloss.Color("#FF6E40"), // Stage 7+: Neon Orange
+	}
+
+	// Bright White Default Text Style
+	TextStyle = lipgloss.NewStyle().
+			Foreground(ColorText).
+			Bold(false)
+
+	BoldWhiteStyle = lipgloss.NewStyle().
+			Foreground(ColorText).
+			Bold(true)
 
 	// App Header Banner
 	HeaderStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#0D1117")).
+			Foreground(ColorText).
 			Background(ColorPrimary).
 			Padding(0, 2).
 			MarginBottom(1)
@@ -32,63 +54,65 @@ var (
 	PanelStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(ColorSecondary).
+			Foreground(ColorText).
 			Padding(1, 2).
 			MarginBottom(1)
 
 	ActivePanelStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(ColorPrimary).
+				Foreground(ColorText).
 				Padding(1, 2).
 				MarginBottom(1)
 
 	SuccessBannerStyle = lipgloss.NewStyle().
 				Border(lipgloss.DoubleBorder()).
-				BorderForeground(ColorSuccess).
+				BorderForeground(ColorMatrixGreen).
+				Foreground(ColorText).
 				Padding(1, 2).
 				MarginBottom(1)
 
 	WarningBannerStyle = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
-				BorderForeground(ColorWarning).
+				BorderForeground(ColorSecondary).
+				Foreground(ColorText).
 				Padding(1, 2).
 				MarginBottom(1)
 
 	// Badges
 	BadgeChainStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#FFFFFF")).
+			Foreground(ColorText).
 			Background(ColorSecondary).
 			Padding(0, 1)
 
 	BadgeSelectedChainStyle = lipgloss.NewStyle().
 				Bold(true).
-				Foreground(lipgloss.Color("#0D1117")).
+				Foreground(ColorText).
 				Background(ColorPrimary).
 				Padding(0, 1)
 
 	BadgeExchangeHitStyle = lipgloss.NewStyle().
 				Bold(true).
-				Foreground(lipgloss.Color("#0D1117")).
-				Background(ColorSuccess).
+				Foreground(lipgloss.Color("#000000")).
+				Background(ColorMatrixGreen).
 				Padding(0, 1)
 
-	BadgeHopStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ColorPrimary)
-
 	BadgeSkippedStyle = lipgloss.NewStyle().
-				Foreground(ColorWarning)
+				Bold(true).
+				Foreground(ColorSecondary)
 
 	// Text helpers
 	MutedStyle = lipgloss.NewStyle().
 			Foreground(ColorMuted)
 
 	AddressStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#80CBC4"))
+			Bold(true).
+			Foreground(ColorMatrixGreen)
 
 	AmountStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("#FFD54F"))
+			Foreground(ColorText)
 
 	ArrowStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -99,6 +123,66 @@ var (
 			Foreground(ColorDanger)
 )
 
+// RenderBigBanner renders a large block-art "CRYPTO TRACKER" banner styled in
+// Red -> Purple -> Matrix Green.
+func RenderBigBanner() string {
+	lines := []string{
+		` ██████╗██████╗ ██╗   ██╗██████╗ ████████╗ ██████╗     ████████╗██████╗  █████╗  ██████╗██╗  ██╗███████╗██████╗ `,
+		`██╔════╝██╔══██╗╚██╗ ██╔╝██╔══██╗╚══██╔══╝██╔═══██╗    ╚══██╔══╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗`,
+		`██║     ██████╔╝ ╚████╔╝ ██████╔╝   ██║   ██║   ██║       ██║   ██████╔╝███████║██║     █████╔╝ █████╗  ██████╔╝`,
+		`██║     ██╔══██╗  ╚██╔╝  ██╔═══╝    ██║   ██║   ██║       ██║   ██╔══██╗██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗`,
+		`╚██████╗██║  ██║   ██║   ██║        ██║   ╚██████╔╝       ██║   ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║`,
+		` ╚═════╝╚═╝  ╚═╝   ╚═╝   ╚═╝        ╚═╝    ╚═════╝        ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝`,
+	}
+
+	redStyle := lipgloss.NewStyle().Bold(true).Foreground(ColorPrimary)
+	purpleStyle := lipgloss.NewStyle().Bold(true).Foreground(ColorSecondary)
+	matrixStyle := lipgloss.NewStyle().Bold(true).Foreground(ColorMatrixGreen)
+
+	var out strings.Builder
+	out.WriteString("\n")
+	for i, line := range lines {
+		switch {
+		case i < 2:
+			out.WriteString("  " + redStyle.Render(line) + "\n")
+		case i < 4:
+			out.WriteString("  " + purpleStyle.Render(line) + "\n")
+		default:
+			out.WriteString("  " + matrixStyle.Render(line) + "\n")
+		}
+	}
+	return out.String()
+}
+
+// StageColor returns a distinct color for each stage number (1-indexed).
+func StageColor(stage int) lipgloss.Color {
+	if stage <= 0 {
+		return ColorMatrixGreen
+	}
+	idx := (stage - 1) % len(StageColors)
+	return StageColors[idx]
+}
+
+// StageBadgeStyle returns a bold foreground style colored specifically for the given stage.
+func StageBadgeStyle(stage int) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Bold(true).
+		Foreground(StageColor(stage))
+}
+
+// StagePillStyle returns a high-contrast pill badge colored specifically for the given stage.
+func StagePillStyle(stage int) lipgloss.Style {
+	fg := ColorText
+	if StageColor(stage) == ColorMatrixGreen || StageColor(stage) == ColorWarning {
+		fg = lipgloss.Color("#000000")
+	}
+	return lipgloss.NewStyle().
+		Bold(true).
+		Foreground(fg).
+		Background(StageColor(stage)).
+		Padding(0, 1)
+}
+
 // FormatShortAddr returns a readable shortened address while keeping prefix and suffix clear.
 func FormatShortAddr(addr string) string {
 	if len(addr) <= 18 {
@@ -106,4 +190,3 @@ func FormatShortAddr(addr string) string {
 	}
 	return fmt.Sprintf("%s...%s", addr[:8], addr[len(addr)-6:])
 }
-

@@ -65,6 +65,9 @@ type AppModel struct {
 func NewAppModel(cfg *config.Config, initialAddress string, initialChain model.ChainType) *AppModel {
 	ti := textinput.New()
 	ti.Placeholder = "e.g. bc1q..., 0x..., or T..."
+	ti.PromptStyle = views.SubHeaderStyle
+	ti.TextStyle = views.BoldWhiteStyle
+	ti.PlaceholderStyle = views.MutedStyle
 	ti.Focus()
 	ti.CharLimit = 100
 	ti.Width = 68

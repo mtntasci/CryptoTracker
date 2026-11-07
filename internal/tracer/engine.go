@@ -56,7 +56,7 @@ func (e *Engine) Trace(ctx context.Context, rootAddress string, eventCh chan<- T
 		Depth:       0,
 		MaxDepth:    e.cfg.MaxDepth,
 		CurrentAddr: trimmedRoot,
-		Message:     fmt.Sprintf("Initializing %s (%s) BFS Tracing Engine (Max Depth: %d hops)", chainType, e.provider.Architecture(), e.cfg.MaxDepth),
+		Message:     fmt.Sprintf("Initializing %s (%s) BFS Tracing Engine (Max Depth: %d stages)", chainType, e.provider.Architecture(), e.cfg.MaxDepth),
 	})
 
 	// Check if starting address itself is already an attributed Exchange Hot/Cold Wallet
@@ -142,7 +142,7 @@ func (e *Engine) Trace(ctx context.Context, rootAddress string, eventCh chan<- T
 			QueueSize:   len(queue),
 			VisitedCnt:  res.TotalVisited,
 			CurrentAddr: current.Address,
-			Message:     fmt.Sprintf("[Hop %d/%d] Querying outbound transactions for %s...", current.Depth, e.cfg.MaxDepth, shortAddr(current.Address)),
+			Message:     fmt.Sprintf("[Stage %d/%d] Querying outbound transactions for %s...", current.Depth, e.cfg.MaxDepth, shortAddr(current.Address)),
 		})
 
 		txs, err := e.provider.FetchOutboundTransactions(ctx, current.Address, e.cfg.MaxTxPerAddress)
@@ -285,7 +285,7 @@ func (e *Engine) Trace(ctx context.Context, rootAddress string, eventCh chan<- T
 				QueueSize:   len(queue),
 				VisitedCnt:  res.TotalVisited,
 				CurrentAddr: tgt.ToAddress,
-				Message:     fmt.Sprintf("Hop %d: %s ──[%.4f %s]──> %s", current.Depth, shortAddr(tgt.FromAddress), tgt.AmountFloat, tgt.AssetSymbol, shortAddr(tgt.ToAddress)),
+				Message:     fmt.Sprintf("Stage %d: %s ──[%.4f %s]──> %s", current.Depth, shortAddr(tgt.FromAddress), tgt.AmountFloat, tgt.AssetSymbol, shortAddr(tgt.ToAddress)),
 				Step:        &step,
 			})
 
@@ -310,7 +310,7 @@ func (e *Engine) Trace(ctx context.Context, rootAddress string, eventCh chan<- T
 		Depth:      res.MaxDepthReached,
 		MaxDepth:   e.cfg.MaxDepth,
 		VisitedCnt: res.TotalVisited,
-		Message:    fmt.Sprintf("BFS Tracing finished in %s (%d hops, %d exchange hits)", res.EndTime.Sub(res.StartTime).Round(time.Millisecond), len(res.Steps), len(res.TerminalHits)),
+		Message:    fmt.Sprintf("BFS Tracing finished in %s (%d steps across %d stages, %d exchange hits)", res.EndTime.Sub(res.StartTime).Round(time.Millisecond), len(res.Steps), res.MaxDepthReached, len(res.TerminalHits)),
 		Result:     res,
 	})
 
